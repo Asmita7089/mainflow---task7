@@ -1,0 +1,138 @@
+import datetime
+import json
+
+categories = [
+    "groceries", "rent", "transportation", "entertainment", "health", "utilities", "others"
+]
+transactions = []
+def add_transaction():
+    """Add income or expense to the tracker."""
+    try:
+        trans_type = input("Enter type (income/expense): ").strip().lower()
+        if trans_type not in ["income", "expense"]:
+            raise ValueError("Invalid transaction type. Choose 'income' or 'expense'.")
+
+        category = input("Enter category: ").strip().lower()
+        if category not in categories:
+            raise ValueError(f"Invalid category. Choose from: {', '.join(categories)}")
+
+        amount = float(input("Enter amount: "))
+        if amount <= 0:
+            raise ValueError("Amount should be positive.")
+
+        date_str = input("Enter date (YYYY-MM-DD) or leave empty for today: ").strip()
+        if not date_str:
+            date_str = str(datetime.date.today())
+        datetime.datetime.strptime(date_str, "%Y-%m-%d")
+
+        transaction = {
+            "type": trans_type,
+            "category": category,
+            "amount": amount,
+            "date": date_str,
+        }
+        transactions.append(transaction)
+        print("Transaction added successfully!")
+    except ValueError as e:
+        print(f"Error: {e}")
+def view_summary():
+    """Display summary of income, expenses, and balance."""
+    income, expense, category_summary = 0, 0, {}
+
+    for trans in transactions:
+        if trans["type"] == "income":
+            income += trans["amount"]
+        elif trans["type"] == "expense":
+            expense += trans["amount"]
+            if trans["category"] in category_summary:
+                category_summary[trans["category"]] += trans["amount"]
+            else:
+                category_summary[trans["category"]] = trans["amount"]
+
+    net_balance = income - expense
+    print(f"\n Income: ₹{income:.2f}")
+    print(f" Expenses: ₹{expense:.2f}")
+    print(f" Net Balance: ₹{net_balance:.2f}")
+
+    if expense > 0:
+        print("\n Expense Breakdown by Category:")
+        for category, amt in category_summary.items():
+            percent = (amt / expense) * 100
+            print(f"  - {category.capitalize()}: ₹{amt:.2f} ({percent:.2f}%)")
+def analyze_patterns():
+    """Identify spending patterns and trends."""
+    category_expenses = {}
+    for trans in transactions:
+        if trans["type"] == "expense":
+            category = trans["category"]
+            category_expenses[category] = category_expenses.get(category, 0) + trans["amount"]
+
+    if not category_expenses:
+        print("\n No expenses to analyze.")
+        return
+
+    max_category = max(category_expenses, key=category_expenses.get)
+    print(f"\n You are spending the most on '{max_category}' with ₹{category_expenses[max_category]:.2f} spent so far.")
+    avg_spending = sum(category_expenses.values()) / len(category_expenses)
+    print(f" Average spending per category: ₹{avg_spending:.2f}")
+def suggest_savings():
+    """Provide suggestions based on spending patterns."""
+    if not transactions:
+        print("\n No data available to suggest savings.")
+        return
+
+    total_expense = sum(trans["amount"] for trans in transactions if trans["type"] == "expense")
+
+    if total_expense == 0:
+        print("\n Great! No expenses to cut down.")
+        return
+
+    print("\n Suggestions for saving money:")
+    for trans in transactions:
+        if trans["type"] == "expense" and trans["amount"] > (0.2 * total_expense):
+            print(f"  - Consider reducing spending on '{trans['category']}' as it consumes a large part of your budget.")
+    print("  - Set a monthly budget for each category to avoid overspending.")
+def save_data():
+    """Save transactions to a file."""
+    with open("finance_data.json", "w") as file:
+        json.dump(transactions, file)
+    print("📚 Data saved successfully!")
+
+def load_data():
+    """Load transactions from a file."""
+    global transactions
+    try:
+        with open("finance_data.json", "r") as file:
+            transactions = json.load(file)
+        print("📚 Data loaded successfully!")
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("🔍 No data found. Starting with an empty list.")
+def main():
+    """Main control menu."""
+    load_data()
+    while True:
+        print("\n Personal Finance Tracker")
+        print("1. Add Transaction")
+        print("2. View Summary")
+        print("3. Analyze Patterns")
+        print("4. Suggest Savings")
+        print("5. Save & Exit")
+
+        choice = input("Enter your choice: ")
+        if choice == "1":
+            add_transaction()
+        elif choice == "2":
+            view_summary()
+        elif choice == "3":
+            analyze_patterns()
+        elif choice == "4":
+            suggest_savings()
+        elif choice == "5":
+            save_data()
+            print(" Exiting... Goodbye!")
+            break
+        else:
+            print(" Invalid choice. Please select a valid option.")
+
+if __name__ == "__main__":
+    main()
